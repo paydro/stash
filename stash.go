@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"fmt"
 	"os"
+	"io/ioutil"
 	"strings"
 )
 
@@ -16,9 +18,9 @@ func main() {
 	args := os.Args[1:]
 	log.Printf("Args: %#v\n", args)
 
-	db, err := sql.Open("sqlite3", "stash.db")
+	db, err := sql.Open("sqlite3", "./tmp/stash.db")
 	if err != nil {
-		log.Fatalln("Could not open ./stash.db")
+		log.Fatalln("Could not open ./tmp/stash.db")
 	}
 	defer db.Close()
 
@@ -27,12 +29,30 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	if err := insertItem(db, args); err != nil {
+	var item string
+	if len(args) > 0 {
+		item = strings.Join(args, " ")
+
+	} else {
+		fmt.Println("What would you like to store?")
+		var err error
+		var bytes []byte
+		bytes, err = ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		item = string(bytes)
+	}
+
+	log.Printf("Item to insert:\n%s", item)
+
+	if err := insertItem(db, item); err != nil {
 		log.Println("Could not insert item:")
 		log.Fatalln(err)
 	}
 
-
+	log.Println("inserted!")
 }
 
 func createItemsTable(db *sql.DB) error {
@@ -51,17 +71,14 @@ func createItemsTable(db *sql.DB) error {
 	return nil
 }
 
-func insertItem(db *sql.DB, args []string) error {
-	item := strings.Join(args, " ")
-
+func insertItem(db *sql.DB, item string) error {
 	stmt := "INSERT INTO items (desc) VALUES (?)"
 
 	preparedStmt, err := db.Prepare(stmt)
 	if err != nil {
 		return err
 	}
-
-
+	log.Println("about to insert item", item)
 	if _, err := preparedStmt.Exec(item); err != nil {
 		return err
 	}
