@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -9,10 +10,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 	"strconv"
+	"strings"
 	"time"
-	"errors"
 )
 
 const (
@@ -20,8 +20,8 @@ const (
 )
 
 var (
-	dbPath string = "./tmp/stash.db"
-	store  *Store
+	dbName	 string = "stash.db"
+	store    *Store
 )
 
 type Store struct {
@@ -29,10 +29,18 @@ type Store struct {
 }
 
 func NewStore() (*Store, error) {
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		homeDir = "/tmp"
+	}
+
+	configPath := homeDir + "/.stash"
+	os.MkdirAll(configPath, 0755)
+
 	var err error
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite3", configPath + "/" + dbName)
 	if err != nil {
-		log.Fatalf("Could not open %s\n", dbPath)
+		log.Fatalf("Could not open %s\n", configPath + "/" + dbName)
 	}
 
 	s := &Store{db: db}
