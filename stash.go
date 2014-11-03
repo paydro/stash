@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -33,6 +34,22 @@ func (i *Item) TrimContent() string {
 	return strings.TrimSpace(i.Content)
 }
 
+func (i *Item) ContentTitle() string {
+	buf := bytes.NewBuffer([]byte(i.Content))
+	line, err := buf.ReadString('\n')
+	if err != nil {
+
+	} else {
+		line = line[:len(line)-1]
+	}
+
+	if len(line) > 50 {
+		return line[0:50]
+	} else {
+		return line
+	}
+}
+
 func RunCommand(command string, args []string) {
 	switch command {
 	case "new":
@@ -44,6 +61,13 @@ func RunCommand(command string, args []string) {
 
 	case "list":
 		err := ListCommand()
+		if err != nil {
+			fmt.Println("Error finding content:", err)
+			os.Exit(1)
+		}
+
+	case "show":
+		err := ShowCommand(args)
 		if err != nil {
 			fmt.Println("Error finding content:", err)
 			os.Exit(1)
@@ -98,9 +122,30 @@ func NewCommand(args []string) error {
 	return nil
 }
 
+func ShowCommand(args []string) error {
+	var (
+		item *Item
+		err error
+	)
+
+	id, err := strconv.Atoi(args[0])
+	if err != nil {
+		return err
+	}
+
+	item, err = store.Find(id)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("%s\n", item.Content)
+
+	return nil
+}
+
 func ListCommand() error {
 	err := store.FindAll(func(item *Item) {
-		fmt.Printf("[%d] %s\n", item.Id, item.Content)
+		fmt.Printf("%4d| %s\n", item.Id, strings.Replace(item.ContentTitle(), "\n", " ", -1))
 	})
 	if err != nil {
 		return err
