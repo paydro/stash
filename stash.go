@@ -37,9 +37,7 @@ func (i *Item) TrimContent() string {
 func (i *Item) ContentTitle() string {
 	buf := bytes.NewBuffer([]byte(i.Content))
 	line, err := buf.ReadString('\n')
-	if err != nil {
-
-	} else {
+	if err == nil {
 		line = line[:len(line)-1]
 	}
 
@@ -93,7 +91,7 @@ func RunCommand(command string, args []string) {
 
 	default:
 		fmt.Println("Usage:")
-		fmt.Println("\tstash new|list|edit|remove ...")
+		fmt.Println("\tstash new|list|show|edit|remove|version ...")
 		fmt.Println("")
 	}
 
