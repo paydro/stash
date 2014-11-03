@@ -188,8 +188,8 @@ func RunCommand(command string, args []string) {
 			os.Exit(1)
 		}
 
-	case "update":
-		err := UpdateCommand(args)
+	case "edit":
+		err := EditCommand(args)
 		if err != nil {
 			fmt.Println("Error updating content:", err)
 			os.Exit(1)
@@ -208,7 +208,7 @@ func RunCommand(command string, args []string) {
 
 	default:
 		fmt.Println("Usage:")
-		fmt.Println("\tstash new|list|update|remove ...")
+		fmt.Println("\tstash new|list|edit|remove ...")
 		fmt.Println("")
 	}
 
@@ -248,7 +248,7 @@ func ListCommand() error {
 	return nil
 }
 
-func UpdateCommand(args []string) error {
+func EditCommand(args []string) error {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
 		return errors.New("Please set the EDITOR environment variable.")
@@ -256,8 +256,8 @@ func UpdateCommand(args []string) error {
 
 	var (
 		item *Item
-		err error
-		tf *os.File
+		err  error
+		tf   *os.File
 	)
 
 	id, err := strconv.Atoi(args[0])
