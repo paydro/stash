@@ -2,13 +2,11 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -99,11 +97,10 @@ func RunCommand(command string, args []string) {
 
 func NewCommand(args []string) error {
 	var content string
+	var err error
 
-	if len(args) > 0 {
-		content = strings.Join(args, " ")
-	} else {
-		var err error
+	// Read from stdin
+	if len(args) == 1 && args[0] == "--" {
 		var bytes []byte
 		bytes, err = ioutil.ReadAll(os.Stdin)
 		if err != nil {
@@ -111,6 +108,15 @@ func NewCommand(args []string) error {
 		}
 
 		content = string(bytes)
+
+	} else if len(args) > 0 {
+		content = strings.Join(args, " ")
+
+	} else {
+		content, err = OpenInEditor("")
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := store.Insert(content); err != nil {
@@ -153,18 +159,12 @@ func ListCommand() error {
 }
 
 func EditCommand(args []string) error {
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		return errors.New("Please set the EDITOR environment variable.")
-	}
+	var item *Item
+	var err  error
+	var id int
+	var content string
 
-	var (
-		item *Item
-		err  error
-		tf   *os.File
-	)
-
-	id, err := strconv.Atoi(args[0])
+	id, err = strconv.Atoi(args[0])
 	if err != nil {
 		return err
 	}
@@ -174,20 +174,7 @@ func EditCommand(args []string) error {
 		return err
 	}
 
-	tf, err = ioutil.TempFile("", "item_edit")
-
-	fmt.Fprintf(tf, "%s", item.Content)
-
-	cmd := exec.Command(editor, tf.Name())
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		return err
-	}
-
-	content, err := ioutil.ReadFile(tf.Name())
+	content, err = OpenInEditor(item.Content)
 	if err != nil {
 		return err
 	}
